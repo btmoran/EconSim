@@ -1,0 +1,290 @@
+import os
+import random
+
+# Define the symbol for the empty space, stone, crop, and player
+EMPTY_SPACE_SYMBOL = "_"
+STONE_SYMBOL = "S"
+CROP_SYMBOL = "C"
+PLAYER_SYMBOLS = ["A", "B"]
+
+# Define the game map
+MAP_SIZE = 15
+grid = [[EMPTY_SPACE_SYMBOL for i in range(MAP_SIZE)] for j in range(MAP_SIZE)]
+
+# Define the size of the map and the number of players
+NUM_PLAYERS = 2
+
+# Define player starting positions and inventory
+y_pos = [0, MAP_SIZE-1]
+x_pos = [0, MAP_SIZE-1]
+y_crop = [1, MAP_SIZE-2]
+x_crop = [1, MAP_SIZE-2]
+y_stone = [0, 1, MAP_SIZE-1, MAP_SIZE-2, (MAP_SIZE//2)]
+x_stone = [1, 0, MAP_SIZE-2, MAP_SIZE-1, (MAP_SIZE//2)]
+crop = [2, 2] # First element for player 1, second element for player 2
+stone = [0, 0]
+money = [0, 0]
+house = [0, 0]
+hunger = [100, 100]
+current_turn = 0
+crop_count = 2
+stone_count = 5
+player1_turn = 1
+game_over = 0
+player_A = [y_pos[0], x_pos[0], hunger[0], crop[0], stone[0], money[0]]
+player_B = [y_pos[1], x_pos[1], hunger[1], crop[1], stone[1], money[1]]
+player_pos = [[y_pos[i], x_pos[i]] for i in range(NUM_PLAYERS)]
+crop_pos = [[y_crop[i], x_crop[i]] for i in range(crop_count)]
+stone_pos = [[y_stone[i], x_stone[i]] for i in range(stone_count)]
+
+# Define the initial hunger of the players and the hunger lost per turn
+INIT_HUNGER = 100
+HUNGER_LOSS_PER_TURN = 1
+
+# Define the frequency of crop and stone generation
+CROP_FREQUENCY = 13
+STONE_FREQUENCY = 10
+
+# Define the cost of building a house and the frequency of money generation after building a house
+HOUSE_COST = 5
+MONEY_FREQUENCY = 25
+
+        
+# Generate the players in the corners
+for i in range(NUM_PLAYERS):
+    x = y_pos[i]
+    y = x_pos[i]
+    grid[x][y] = PLAYER_SYMBOLS[i]
+  
+# Generate Map Stones
+for i in range(stone_count):
+    x = y_stone[i]
+    y = x_stone[i]
+    grid[x][y] = STONE_SYMBOL  
+    
+# Generate Map Crops
+for i in range(crop_count):
+    x = y_crop[i]
+    y = x_crop[i]
+    grid[x][y] = CROP_SYMBOL
+
+while not game_over:
+    turn = 0
+    for i in range(NUM_PLAYERS):
+        print(f"Player {PLAYER_SYMBOLS[i]}: Crops={crop[i]} Stone={stone[i]} Houses={house[i]} Money={money[i]} Hunger={hunger[i]}")
+        print()
+    for i in range(MAP_SIZE-1):
+        for j in range(MAP_SIZE-1):
+            for k in range(crop_count):
+                if grid[i][j] == [crop_pos[k]]:
+                    symbol = CROP_SYMBOL
+            for k in range(stone_count):        
+                if grid[i][j] == [stone_pos[k]]:
+                    symbol = STONE_SYMBOL
+            for k in range(NUM_PLAYERS):
+                if grid[i][j] == [player_pos[k]]:
+                    symbol = PLAYER_SYMBOLS[k]
+                elif grid[i][j] != CROP_SYMBOL and grid[i][j] != STONE_SYMBOL:
+                    symbol = EMPTY_SPACE_SYMBOL
+            
+    for i in grid:
+        for j in i:
+            for val in j:
+                print(val, end='')
+        print()
+        
+    print("Turn", current_turn)
+    index_value = 0 
+    while turn < NUM_PLAYERS:    
+        for i in range(NUM_PLAYERS):
+            for j in range(NUM_PLAYERS):
+                print("Player ", PLAYER_SYMBOLS[i])
+                if stone[i] >= HOUSE_COST: 
+                    if crop[i] > 0:
+                        if hunger[i] <= 75:
+                            action = input("Move (w/a/s/d), Build (b), Eat (g): ")
+                        else:
+                            action = input("Move (w/a/s/d), Build (b): ")
+                    else:
+                        action = input("Move (w/a/s/d), Build (b): ")
+                else: 
+                    if crop[i] > 0:
+                        if hunger[i] <= 75:
+                            action = input("Move (w/a/s/d), Eat (g): ")
+                        else:
+                            action = input("Move (w/a/s/d): ")
+                    else:
+                        action = input("Move (w/a/s/d): ")
+
+                if action == "w":
+                    new_y = y_pos[i] - 1
+                    if new_y < 0:
+                        print("Cannot move out of bounds!")
+                        continue
+                    elif j != i and new_y == y_pos[j] and x_pos[i] == x_pos[j]:
+                        print("Cannot move into another player!")
+                        continue
+                    else:
+                        y_pos[i] = new_y
+                        if j != i and y_pos[i]+1 == y_pos[j] and x_pos[i] == x_pos[j]:
+                            continue
+                        else:
+                            grid[y_pos[i]+1][x_pos[i]] = EMPTY_SPACE_SYMBOL
+                elif action == "a":
+                    new_x = x_pos[i] - 1
+                    if new_x < 0:
+                        print("Cannot move out of bounds!")
+                        continue
+                    elif j != i and y_pos[i] == y_pos[j] and new_x == x_pos[j]:
+                        print("Cannot move into another player!")
+                        continue
+                    else:
+                        x_pos[i] = new_x
+                        if j != i and y_pos[i] == y_pos[j] and x_pos[i]+1 == x_pos[j]:
+                            continue
+                        else:
+                            grid[y_pos[i]][x_pos[i]+1] = EMPTY_SPACE_SYMBOL
+                elif action == "s":
+                    new_y = y_pos[i] + 1
+                    if new_y >= MAP_SIZE:
+                        print("Cannot move out of bounds!")
+                        continue
+                    elif j != i and new_y == y_pos[j] and x_pos[i] == x_pos[j]:
+                        print("Cannot move into another player!")
+                        continue
+                    else:
+                        y_pos[i] = new_y
+                        if j != i and y_pos[i]-1 == y_pos[j] and x_pos[i] == x_pos[j]:
+                            continue
+                        else:
+                            grid[y_pos[i]-1][x_pos[i]] = EMPTY_SPACE_SYMBOL
+                elif action == "d":
+                    new_x = x_pos[i] + 1
+                    if new_x >= MAP_SIZE:
+                        print("Cannot move out of bounds!")
+                        continue
+                    elif j != i and y_pos[i] == y_pos[j] and new_x == x_pos[j]:
+                        print("Cannot move into another player!")
+                        continue
+                    else:
+                        x_pos[i] = new_x
+                        if j != i and y_pos[i] == y_pos[j] and x_pos[i]-1 == x_pos[j]:
+                            continue
+                        else:
+                            grid[y_pos[i]][x_pos[i]-1] = EMPTY_SPACE_SYMBOL
+                
+                elif action == "b":
+                    if stone[i] >= HOUSE_COST:
+                        stone[i] -= HOUSE_COST
+                        house[i] += 1
+                        continue
+                    else:
+                        print("Not enough stone!")
+                        continue
+                elif action == "g":
+                    if crop[i] > 0 and hunger[i] <= 75:
+                        hunger[i] += 25
+                        crop[i] -= 1
+                        continue
+                    elif crop[i] == 0:
+                        print("No crops left!")
+                        continue
+                    else:
+                        print("Not hungry enough to eat!")
+                        continue
+                elif action == "q":
+                    print(f'Player A: Crops={crop[0]} Stone={stone[0]} Houses={house[0]} Money={money[0]} Hunger={hunger[0]}')
+                    print(f'Player B: Crops={crop[1]} Stone={stone[1]} Houses={house[1]} Money={money[1]} Hunger={hunger[1]}')
+                    print(f'Crops: Count={crop_count} Pos={crop_pos}')
+                    print(f'Stones: Count={stone_count} Pos={stone_pos}')
+                    quit()  
+                else:
+                    print("Invalid action!")
+                    continue
+
+                # Check for crop or stone pickup
+                if grid[y_pos[i]][x_pos[i]] == CROP_SYMBOL:
+                    crop[i] += 1
+                    crop_count -= 1
+                    grid[y_pos[i]][x_pos[i]] = PLAYER_SYMBOLS[i]
+                    turn += 1
+                    index_value = crop_pos.index([y_pos[i], x_pos[i]])
+                    del crop_pos[index_value]
+                    del y_crop[index_value]
+                    del x_crop[index_value]
+                    break
+                elif grid[y_pos[i]][x_pos[i]] == STONE_SYMBOL:
+                    stone[i] += 1
+                    stone_count -= 1
+                    grid[y_pos[i]][x_pos[i]] = PLAYER_SYMBOLS[i]
+                    turn += 1
+                    index_value = stone_pos.index([y_pos[i], x_pos[i]])
+                    del stone_pos[index_value]
+                    del y_stone[index_value]
+                    del x_stone[index_value]
+                    break
+                else:
+                    grid[y_pos[i]][x_pos[i]] = PLAYER_SYMBOLS[i]
+                    turn += 1
+                    break
+        
+    current_turn += 1
+    hunger[0] -= 1
+    hunger[1] -= 1
+         
+    if current_turn % MONEY_FREQUENCY == 0:
+        money[0] += 1 * house[0]
+        money[1] += 1 * house[1]
+        
+    if current_turn % CROP_FREQUENCY == 0:
+        add = 0
+        att = 0
+        while add == 0 and att < 3:
+            x = random.randint(0, MAP_SIZE-1)
+            y = random.randint(0, MAP_SIZE-1)
+            if grid[x][y] == EMPTY_SPACE_SYMBOL:
+                grid[x][y] = 'C'
+                crop_count += 1
+                add = 1
+                crop_pos.append([x, y])
+                y_crop.append(x)
+                x_crop.append(y)
+            else:
+                att += 1
+                if att == 3:
+                    print("Crop generation skipped")
+        
+    if current_turn % STONE_FREQUENCY == 0:
+        add = 0
+        att = 0
+        while add == 0 and att < 3:
+            x = random.randint(0, MAP_SIZE-1)
+            y = random.randint(0, MAP_SIZE-1)
+            if grid[x][y] == EMPTY_SPACE_SYMBOL:
+                grid[x][y] = 'S'
+                stone_count += 1
+                add = 1
+                stone_pos.append([x, y])
+                y_stone.append(x)
+                x_stone.append(y)
+            else:
+                att += 1
+                if att == 3:
+                    print("Stones generation skipped")
+          
+    if current_turn == 1000:
+        game_over = 1
+        print("Player with the most money wins!")
+    elif hunger[0] <= 0:
+        game_over = 1
+        print("Player B wins!")
+    elif hunger[1] <= 0:
+        game_over = 1
+        print("Player A wins!")
+    else:
+        continue
+    break
+    
+print(f'Player A: Crops={crop[0]} Stone={stone[0]} Houses={house[0]} Money={money[0]} Hunger={hunger[0]}')
+print(f'Player B: Crops={crop[1]} Stone={stone[1]} Houses={house[1]} Money={money[1]} Hunger={hunger[1]}')
+print(f'Crop Count={crop_count} Crop Pos={crop_pos} Stone Count={stone_count} Stone Pos={stone_pos}')
